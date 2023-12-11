@@ -1,0 +1,356 @@
+body {
+    height: 99vh;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+    background: white;
+}
+
+#epubContainer {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    position: relative;
+    overflow: hidden;
+    overflow-y: auto;
+    z-index: 1;
+    background: inherit;
+}
+
+#epubContainer > iframe {
+    width: 96%;
+    height: 100%;
+    display: block;
+    overflow: hidden;
+    border: none;
+    min-height: 100vh;
+}
+
+.blur {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background: #000;
+    opacity: 0.8;
+    z-index: 100;
+    top: 0px;
+    left: 0px;
+}
+
+.loader {
+    width: 48px;
+    height: 48px;
+    border: 5px solid #FFF;
+    border-bottom-color: #000;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+    position: fixed;
+
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+svg {
+    width: 30px;
+}
+svg-progress-circle[percent="100"] path {
+    stroke: inherit
+}
+
+.progress {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+}
+
+
+.hidden {
+    display: none !important;
+}
+
+@media only screen and (max-width: 1024px) and (orientation : landscape) {    
+    .dialog {
+      min-height: 90% !important;
+    }
+}
+
+.dialog {
+    position: fixed;
+    z-index: 101;
+    min-width: 80%;
+    min-height: 50%;
+    display: inline-block;
+    background-color: #fff;
+    top: 0;
+    left: 30%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    overflow: hidden;
+    max-height: 60%;
+    max-width: 80%;
+}
+
+.dialog .title {
+    width: 100%;
+    height: 20px;
+    min-height: 20px;
+    display: inline-block;
+    font-size: 15px;
+    font-weight: bolder;
+    color: gray;
+    text-align: left;
+    padding: 5px;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 2px;
+}
+
+.dialog .title button, .dialog .title a {
+    float: right;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 2px;
+    display: inline-block;
+    border: 1px solid #ccc;
+    margin-right: 10px;
+    text-align: center;
+}
+
+.dialog .center {
+    display: block;
+    width: 90%;
+    height: 300px;
+    max-height: 99%;
+    overflow: hidden;
+    overflow-y: auto;
+    position: relative;
+    padding: 10px;
+}
+
+.formContainer {
+    display: flex;
+    width: 95%;
+    height: 30px;
+    margin-bottom: 5px;
+    max-width: 95%;
+    justify-items: center;
+    justify-content: center;
+
+}
+
+
+
+.formContainer>label {
+    flex: 100px 0 0 !important;
+    align-items: center !important;
+    display: flex;
+    width: 100px;
+}
+
+.formContainer>*:not(:first-child) {
+    flex: 2;
+    min-height: 100%;
+    margin: 0;
+    display: block;
+    position: relative;
+}
+
+.formContainer >label:last-child {
+    flex: 0 0 25px !important;
+
+}
+
+
+.bubble {
+    background: red;
+    color: white;
+    border-radius: 1px;
+    width: 12px;
+    overflow: hidden;
+    text-align: center;
+    position: relative;
+    max-height: 25px;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex: 1;
+    font-weight: bold;
+}
+
+
+.tab-menu {
+    width: 100%;
+    display: inline-block;
+    position: relative;
+    overflow: hidden;
+    height: 99%;
+}
+
+.tab-menu .content {
+    display: block
+    padding: 10px;
+    overflow: hidden;
+    overflow-y: auto;
+    height: 90%;
+    max-height: 90%;
+    position: relative;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.tab-menu .tab-container {
+    height: 30px;
+    width: 100%;
+    display: flex;
+    position: relative;
+}
+
+.tab-menu .tab-container >a {
+    height: 20px;
+    min-width: 80px;
+    display: inline-block;
+    border: 1px solid #ccc;
+    padding: 5px;
+    text-align: center;
+    font-size: 13px;
+
+}
+
+.tab-menu a.selected {
+    color: gray;
+    border-bottom: none !important;
+}
+
+.menuIcon {
+    width: 20px;
+    height: 10px;
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    z-index: 200;
+
+}
+
+.menuIcon:fullscreen,.menuIcon:-webkit-full-screen,.menuIcon:-moz-full-screen {
+    right: 50px;
+}
+
+.menuIcon >div {
+    width: 100%;
+    height: 2.5px;
+    background-color: black;
+    margin: 6px 0;
+}
+
+.chapters {
+    display: block;
+}
+
+.chapters >a {
+    padding: 5px;
+    width: 100%;
+    border-bottom: 1px solid #ccc;
+    min-height: 14px;
+    clear: both;
+    position: relative;
+    padding-bottom: 2px;
+    margin-bottom: 10px;
+    padding-right: 10px;
+    font-size: 14px;
+    display: inline-block;
+}
+
+.chapters a.selected {
+    background: gray;
+    color: white;
+}
+
+textarea {
+    width: 100%;
+    height: 100%;
+}
+
+.DownMenu {
+    width: 100%;
+    height: 100px;
+    background: #000;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    color: white;
+    opacity: 0.5;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    z-index: 5;
+}
+
+.DownMenu > div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 25%;
+}
+
+.DownMenu > div:last-child p {
+    font-size: 12px;
+
+}
+
+.DownMenu .link,.DownMenu input {
+    float: left;
+    display: inline-block;
+    font-size: 50px;
+    font-weight: bold;
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+}
+
+.DownMenu .link {
+    margin-top: -8px
+}
+
+.DownMenu input {
+    width: 70%;
+}
+
+
+input[type="range"] {
+    -webkit-appearance: none;
+    height: 25px;
+    background: #d3d3d3;
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+input[type="range"]:hover {
+    opacity: 1;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 25px;
+    height: 25px;
+    background: #04AA6D;
+    cursor: pointer;
+}
+
+input[type='button'].link {
+    border: none;
+    background: inherit;
+    color: blue;
+    text-align: right;
+}

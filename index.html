@@ -1,0 +1,23 @@
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="reader.single.js"></script>
+</head>
+<body>
+  <input type="file" class="epubLoader" />
+<div id="container"></div>
+
+<script>
+
+  const lnk = "https://raw.githubusercontent.com/1-AlenToma/jsEpubReader/main/Dimensional%20Descent.epub";
+  ReadFile(lnk, {
+    container: document.getElementById("container")
+  });
+  document.querySelector(".epubLoader").onchange = async (e)=> {
+    const epub = await ReadFile(e.target.files[0], {
+      container: document.getElementById("container")
+    });
+  }
+</script>
+</body>
+</html>
