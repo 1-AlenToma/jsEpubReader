@@ -21,6 +21,8 @@ const read = async ()=>{
 }
 
 // epub.settings containes all the readed progress the reader has made and read
+
+// those settings could also be saved an resued if you pass it to the options as settings:{}
 }
 
 </script>
