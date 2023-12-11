@@ -1177,7 +1177,8 @@ async function fetch_file(url, options) {
     const content = await JSZip.loadAsync(buffer);
     book = new Book(externalContainer,
       options,
-      content.files);
+      content.files,
+      options.settings);
     await book.load();
   }catch(e) {
     console.error(e);
@@ -1190,7 +1191,8 @@ async function downloadFile (file, options) {
     data.files.name = file.name;
     book = new Book(externalContainer,
       options,
-      data.files);
+      data.files,
+      options.settings);
     await book.load();
   }catch(e) {
     console.error(e);
