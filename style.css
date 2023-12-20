@@ -18,7 +18,11 @@ body {
 }
 
 #epubContainer > iframe {
+<<<<<<< HEAD
     width: 96%;
+=======
+    width: 100%;
+>>>>>>> 07632d1 (test)
     height: 100%;
     display: block;
     overflow: hidden;
@@ -146,7 +150,13 @@ svg-progress-circle[percent="100"] path {
 
 }
 
+<<<<<<< HEAD
 
+=======
+.alone{
+	margin: 0 !important;
+}
+>>>>>>> 07632d1 (test)
 
 .formContainer>label {
     flex: 100px 0 0 !important;
@@ -155,9 +165,15 @@ svg-progress-circle[percent="100"] path {
     width: 100px;
 }
 
+<<<<<<< HEAD
 .formContainer>*:not(:first-child) {
     flex: 2;
     min-height: 100%;
+=======
+.formContainer>*:not(:first-child),.alone>* {
+    flex: 2;
+    min-height: 95%;
+>>>>>>> 07632d1 (test)
     margin: 0;
     display: block;
     position: relative;
@@ -182,6 +198,10 @@ svg-progress-circle[percent="100"] path {
     justify-content: center !important;
     align-items: center !important;
     flex: 1;
+<<<<<<< HEAD
+=======
+    font-size: 10px;
+>>>>>>> 07632d1 (test)
     font-weight: bold;
 }
 
@@ -230,6 +250,7 @@ svg-progress-circle[percent="100"] path {
 }
 
 .menuIcon {
+<<<<<<< HEAD
     width: 20px;
     height: 10px;
     position: fixed;
@@ -250,6 +271,59 @@ svg-progress-circle[percent="100"] path {
     margin: 6px 0;
 }
 
+=======
+    width: 35px;
+    height: 35px;
+    margin-right: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.menuIcon:active{
+	opacity: 0.4;
+}
+
+.menuIcon span{
+	display: inline-block;
+	font-size: 35px;
+	color: #fff;
+  font-weight: bold;
+	height: 100%;
+	width: 100%;
+	position: relative;
+}
+
+.menuIcon.selected{
+	color: blue;
+	opacity: 0.4;
+}
+
+.topMenu, .player{
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	background: #000;
+	opacity: 0.6;
+	position: fixed;
+	top: 1px;
+	left: 0px;
+	z-index: 290;
+	height: 40px;
+	width: 100%;
+	padding-right: 30px;
+	user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+.player{
+	top:45px;
+	padding-left: 5px;
+}
+
+
+>>>>>>> 07632d1 (test)
 .chapters {
     display: block;
 }
@@ -353,4 +427,53 @@ input[type='button'].link {
     background: inherit;
     color: blue;
     text-align: right;
+<<<<<<< HEAD
 }
+=======
+}
+
+context{
+	min-width: 100px;
+	height: 40px;
+	display: flex;
+	opacity: 0;
+	justify-content: center;
+	align-items: center;
+	border:1px solid #ccc;
+	position: fixed;
+	top: 30%;
+	left: 30%;
+	z-index: 99999999;
+	border-radius: 5px;
+	vertical-align: center;
+	background-color: #434656;
+}
+
+context item{
+	position: relative;
+	padding: 8px;
+	font-size: 14px;
+	text-align: center;
+	vertical-align: center;
+	display: flex;
+	font-weight: bold;
+	justify-content: center;
+	color: #fff;
+	  -webkit-user-select: none; /* Safari */
+  -ms-user-select: none; /* IE 10 and IE 11 */
+  user-select: none; /* Standard syntax */
+}
+
+context item:active{
+	opacity: 0.3;
+}
+
+context item span{
+	height: 16px;
+	display: inline-block;
+	position: relative;
+	top: -3px;
+	margin-right: 2px;
+}
+
+>>>>>>> 07632d1 (test)
