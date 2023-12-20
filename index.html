@@ -1,14 +1,6 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<<<<<<< HEAD
-<script src="reader.single.js"></script>
-</head>
-<body>
-  <input type="file" class="epubLoader" />
-<div id="container"></div>
-
-=======
   <script src="jszip.min.js"></script>
   <link rel="stylesheet" href="gStyle.css" />
 <link href="style.css" rel="stylesheet" type="text/css"/>
@@ -17,14 +9,10 @@
 <body>
   <input type="file" class="epubLoader" />
   <div id="container"></div>
->>>>>>> 07632d1 (test)
 <script>
 
   const lnk = "https://raw.githubusercontent.com/1-AlenToma/jsEpubReader/main/Dimensional%20Descent.epub";
   ReadFile(lnk, {
-<<<<<<< HEAD
-    container: document.getElementById("container")
-=======
     container: document.getElementById("container"),
     onPlay:(t)=>{
     	setTimeout(()=>{
@@ -33,7 +21,6 @@
     }
   }).then(x=>{
   	x.play();
->>>>>>> 07632d1 (test)
   });
   document.querySelector(".epubLoader").onchange = async (e)=> {
     const epub = await ReadFile(e.target.files[0], {
