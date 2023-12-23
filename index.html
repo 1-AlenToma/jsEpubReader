@@ -2,6 +2,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="jszip.min.js"></script>
+  <script src="jscolor.js"></script>
   <link rel="stylesheet" href="gStyle.css" />
 <link href="style.css" rel="stylesheet" type="text/css"/>
 <script src="reader.js"></script>
@@ -9,14 +10,21 @@
 <body>
   <input type="file" class="epubLoader" />
   <div id="container"></div>
+  
 <script>
-
   const lnk = "https://raw.githubusercontent.com/1-AlenToma/jsEpubReader/main/Dimensional%20Descent.epub";
+  //const voice= new SpeechSynthesisUtterance("Educative.io");
+  let api = {};
   ReadFile(lnk, {
     container: document.getElementById("container"),
+    	api:api,
+    	voices:[],
+    	onBack:()=>{
+    		
+    	},
     onPlay:(t)=>{
     	setTimeout(()=>{
-    		book.selectedChapter.next()
+    		//book.selectedChapter.next()
     	},2000);
     }
   }).then(x=>{

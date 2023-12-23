@@ -1,3 +1,178 @@
+function ReactNativeApi() {
+    const requestedData = new Map();
+
+    function get(type) {
+        let data = undefined;
+        if (requestedData.has(type)) {
+            data = requestedData.get(type);
+            requestedData.delete(type);
+        }
+        return data;
+    }
+
+    async function postMessage(msg, args) {
+        try {
+            await window.ReactNativeWebView.postMessage(
+                JSON.stringify({ type: msg, data: args })
+            );
+        } catch (e) {
+            postMessage("ERROR", e.toString());
+        }
+    }
+
+    async function sleep(ms) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve();
+            }, ms || 500);
+        });
+    }
+
+    document.addEventListener(
+        "message",
+        function (event) {
+            try {
+                var data = JSON.parse(event.data);
+                switch (data.type) {
+                    case "NovelData":
+                        window.novel = data.data;
+                        renderEbookReader();
+                        break;
+                    case "Play":
+                        if (!window.book || window.book.menu.player.playing)
+                            return;
+                        window.book.play(data);
+                        break;
+                    case "Pause":
+                        if (!window.book || !window.book.menu.player.playing)
+                            return;
+                        window.book.stop();
+                        break;
+                    case "PlayNext":
+                        if (!window.book) return;
+                        window.selectedChapter.next();
+                        break;
+                    case "PlayPrev":
+                        if (!window.book) return;
+                        window.book.selectedChapter.prev();
+                        break;
+                    default:
+                        postMessage("LOG", data);
+                }
+            } catch (e) {
+                postMessage("ERROR", e.toString());
+            }
+        },
+        false
+    );
+
+    async function renderEbookReader() {
+        try {
+            if (!window.novel) {
+                postMessage("NovelData");
+                return;
+            }
+            Object.keys(novel.files).forEach(x => {
+                let item = novel.files[x];
+                item.async = async ch => {
+                    await postMessage("onChapterRequest", ch);
+                    while (!requestedData.has("RequestedChapter"))
+                        await sleep(100);
+                    return get("RequestedChapter");
+                };
+            });
+
+            await postMessage("LOG", "Loading Novel" + novel.name);
+            externalContainer = document.getElementById("container");
+            window.book = new Book(
+                externalContainer,
+                {
+                    ...novel.options,
+                    onBack: () => {
+                        postMessage("BACK", "");
+                    },
+                    api: {
+                        speak: async txt => {
+                            await postMessage("SPEEK", txt);
+                        },
+                        pause: async () => {
+                            await postMessage("STOP", "");
+                        }
+                    },
+                    onSettingUpdate: async () => {
+                        await postMessage("SETTINGS", book.settings);
+                    },
+                    onChapterUpdate: async () => {
+                        await postMessage("CHAPTER", book.selectedChapter);
+                    }
+                },
+                novel.files,
+                novel
+            );
+            await book.load();
+            postMessage("LOG", "NovelLoaded");
+        } catch (e) {
+            postMessage("ERROR", e.toString());
+        }
+    }
+
+    renderEbookReader();
+}
+
+class VoiceSettings {
+    constructor(book) {
+        this.voices = book.options.voices;
+        this.r = book.settings.rate || 1;
+        this.p = book.settings.pitch || 1;
+        this.v = book.settings.voice;
+        this.lang = book.settings.lang || "en";
+        this.text = "";
+        this.api = book.options.api;
+        this.book = book;
+        console.log(this);
+    }
+
+    get voice() {
+        return this.v;
+    }
+
+    set voice(v) {
+        this.v = v;
+        this.book.settings.voice = v;
+    }
+
+    get pitch() {
+        return this.p;
+    }
+
+    set pitch(p) {
+        this.p = p;
+        this.book.settings.pitch = p;
+    }
+
+    get rate() {
+        return this.r;
+    }
+
+    set rate(r) {
+        this.r = r;
+        this.book.settings.rate = r;
+    }
+
+    speak(text) {
+        this.text = text;
+        if (this.api && this.api.speak) {
+            this.api.speak(text);
+        }
+    }
+
+    pause() {
+        if (this.api && this.api.pause) {
+            this.api.pause();
+        }
+    }
+}
+
 function contextMenu(w, book) {
     if (document.querySelector("context"))
         document.querySelector("context").remove();
@@ -19,6 +194,7 @@ function contextMenu(w, book) {
 
     replace.event("click", () => {
         toggleMenuOff();
+        new textReplacement(getSelectionText());
         if (book.options.onContextMenu) {
             book.options.onContextMenu("replace", getSelectionText());
         }
@@ -165,12 +341,14 @@ customElements.define(
 function openFullscreen() {
     try {
         const elem = document.body;
+        const elem0 = document;
         var isfullscren =
-            (elem.fullscreenElement && elem.fullscreenElement !== null) ||
-            (elem.webkitFullscreenElement &&
-                elem.webkitFullscreenElement !== null) ||
-            (elem.mozFullScreenElement && elem.mozFullScreenElement !== null) ||
-            (elem.msFullscreenElement && elem.msFullscreenElement !== null);
+            (elem0.fullscreenElement && elem0.fullscreenElement !== null) ||
+            (elem0.webkitFullscreenElement &&
+                elem0.webkitFullscreenElement !== null) ||
+            (elem0.mozFullScreenElement &&
+                elem0.mozFullScreenElement !== null) ||
+            (elem0.msFullscreenElement && elem0.msFullscreenElement !== null);
 
         if (!isfullscren) {
             if (elem.requestFullscreen) {
@@ -183,14 +361,14 @@ function openFullscreen() {
                 elem.msRequestFullscreen();
             }
         } else {
-            if (elem.exitFullscreen) {
-                elem.exitFullscreen();
-            } else if (elem.webkitExitFullscreen) {
-                elem.webkitExitFullscreen();
-            } else if (elem.mozCancelFullScreen) {
-                elem.mozCancelFullScreen();
-            } else if (elem.msExitFullscreen) {
-                elem.msExitFullscreen();
+            if (elem0.exitFullscreen) {
+                elem0.exitFullscreen();
+            } else if (elem0.webkitExitFullscreen) {
+                elem0.webkitExitFullscreen();
+            } else if (elem0.mozCancelFullScreen) {
+                elem0.mozCancelFullScreen();
+            } else if (elem0.msExitFullscreen) {
+                elem0.msExitFullscreen();
             }
         }
     } catch (e) {
@@ -246,7 +424,7 @@ function scrollTo(el, parent) {
     }
 }
 
-const arrayItem = function () {
+const arrayItem = function (titems) {
     const arr = function () {};
     arr.prototype = Array.prototype;
 
@@ -280,6 +458,7 @@ const arrayItem = function () {
     item.remove.bind(item);
     item.clear.bind(item);
     item.removeAt.bind(item);
+    if (titems) item.add(...titems);
     return item;
 };
 
@@ -315,6 +494,11 @@ const Element = function (type, options) {
     this.attr = (key, value) => {
         if (value !== undefined) this.el.setAttribute(key, value);
         return this.el.getAttribute(key);
+    };
+
+    this.setAttr = (key, value) => {
+        this.attr(key, value);
+        return this;
     };
 
     function getStyle(el, cssprop) {
@@ -354,19 +538,22 @@ const Element = function (type, options) {
 
     this.appendTo = parent => {
         this.getEl(parent).appendChild(this.el);
+        jscolor.install();
         return this;
     };
 
-    this.add = content => {
-        if (typeof content == "string") {
-            const c = document.createElement("div");
-            c.innerHTML = content;
-            content = c;
-        }
+    this.add = (...contents) => {
+        contents.forEach(content => {
+            if (typeof content == "string") {
+                const c = document.createElement("div");
+                c.innerHTML = content;
+                content = c;
+            }
 
-        if (content.el === undefined) this.el.appendChild(content);
-        else this.el.appendChild(content.el);
-
+            if (content.el === undefined) this.el.appendChild(content);
+            else this.el.appendChild(content.el);
+        });
+        jscolor.install();
         return this;
     };
 
@@ -407,7 +594,7 @@ const Element = function (type, options) {
         const firstrun = offset == undefined;
         if (firstrun) {
             this.classList().remove("hidden");
-            if (center) this.center().focus();
+            if (center) this.center().focus().destroy();
             offset = offset || this.offset();
             this.css({
                 top: "-" + (offset.y + offset.height) + "px",
@@ -487,7 +674,7 @@ const Element = function (type, options) {
 };
 
 const resizEvents = new arrayItem();
-const center = function (el, parent) {
+const center = function (el, parent, resize) {
     parent = parent || document.body;
     parent = parent.el || parent;
     el = el.el || el;
@@ -504,6 +691,7 @@ const center = function (el, parent) {
             pOffset.x + pOffset.width / 2 - eOffset.width / 2 + "px";
         el.style.top =
             pOffset.y + pOffset.height / 2 - eOffset.height / 2 - 30 + "px";
+        return this;
     };
 
     this.destroy = () => {
@@ -565,6 +753,7 @@ const dialog = function (parent, onchange) {
     this.dialog = dialog;
     this.centerData = undefined;
     dialog.center(parent);
+    this.center = new center(dialog, parent);
     this.size = () => {
         if (this.centerData) {
             this.centerData.style.height = dialog.offset().height - 40 + "px";
@@ -578,13 +767,14 @@ const dialog = function (parent, onchange) {
     resizEvents.add(() => {
         this.size();
     });
-
+    this.rindex = resizEvents.length - 1;
     this.timer = undefined;
     this.open = () => {
         blur.classList.remove("hidden");
-        dialog.slideDown(center, undefined, () => {
+        dialog.slideDown(true, undefined, () => {
             this.size();
             if (onchange) onchange();
+            jscolor.install();
         });
         return this;
     };
@@ -598,9 +788,10 @@ const dialog = function (parent, onchange) {
     };
 
     this.destroy = () => {
-        dialog.remove();
+        dialog.el.remove();
         blur.remove();
         this.center.destroy();
+        resizEvents.removeAt(this.rindex);
         dialogsTotal--;
     };
 
@@ -701,6 +892,10 @@ function bookSettings(b, options) {
             }
         });
     }
+    this.textReplacement = new arrayItem(options.textReplacement);
+    this.rate = options.rate || 1;
+    this.pitch = options.pitch || 1;
+    this.voice = options.voice || "";
     this.font = options.font || "Arial (sans-serif)";
     this.fontSize = options.fontSize || 22;
     this.textAlign = options.textAlign || "left";
@@ -733,7 +928,7 @@ function chapterSetting(file) {
                 this.contentArray.add({
                     text: txt,
                     el: x
-                })
+                });
             }
         });
         return this.contentArray;
@@ -772,37 +967,49 @@ function chapterSetting(file) {
 // options {processHtml, enableLinks,onContextMenu}
 function Book(body, options, files, settings) {
     createdElements.clear();
+    settings = settings || {};
     this.contextMenu = undefined;
     resizEvents.clear();
     this.epubBody = body;
     this.selectedChapter = undefined;
-    this.name = files.name;
+    this.name = settings.name || files.name;
     this.filesKeys = Object.keys(files);
     this.files = files;
     this.options = options;
     this.menu = undefined;
-    this.settings = new bookSettings(this, settings || {});
+    this.settings = new bookSettings(this, settings);
+    this.voiceSettings = new VoiceSettings(this);
     this.change = new arrayItem();
     this.loader = new loader();
     this.currentPlaying = "";
-    this.play = () => {
-        if (!this.selectedChapter) return;
+    this.onUpdateSettings = async () => {
+        await this.loadChapter();
+        if (options.onSettingUpdate) options.onSettingUpdate(this.settings);
+    };
 
+    this.onChapterUpdate = async () => {
+        await this.loadChapter();
+        if (options.onChapterUpdate) options.onChapterUpdate();
+    };
+    this.play = async () => {
+        while (this.loader.isLoading) await wait(10);
+        if (!this.selectedChapter) return;
         let t =
             this.selectedChapter.contentArray[
                 this.selectedChapter.audioProgress
             ].text;
         if (t != this.currentPlaying) {
-            if (this.options.onPlay) this.options.onPlay(t);
+            this.voiceSettings.speak(t);
+            this.currentPlaying = t;
+            this.menu.player.playing = true;
+            this.loadChapter();
         }
-        this.currentPlaying = t;
-        this.menu.player.playing = true;
     };
 
     this.stop = () => {
         this.currentPlaying = "";
         this.menu.player.playing = false;
-        if (this.options.onStop) this.options.onStop();
+        this.voiceSettings.pause();
     };
     resizEvents.add(() => {
         if (this.selectedChapter) this.loadChapter();
@@ -810,10 +1017,15 @@ function Book(body, options, files, settings) {
     this.container = new Element("div", {
         id: "epubContainer",
         onscroll: ev => {
-            this.selectedChapter.scrollProgress = this.container.el.scrollTop;
-            this.setProgress();
-            this.bottomReached(ev.target);
-            this.topReached();
+            if (!this.menu.showPlayer) {
+                this.selectedChapter.scrollProgress =
+                    this.container.el.scrollTop;
+                if (this.options.onChapterUpdate)
+                    this.options.onChapterUpdate();
+                this.setProgress();
+                this.bottomReached(ev.target);
+                this.topReached();
+            }
         }
     }).appendTo(body);
     this.container.val("");
@@ -933,7 +1145,9 @@ function Book(body, options, files, settings) {
     };
 
     this.jumpTo = index => {
-        this.loadChapter(this.settings.chapterSettings[index]);
+        this.settings.selectedChapterIndex = index;
+        this.selectedChapter = this.settings.chapterSettings[index];
+        this.onChapterUpdate();
     };
 
     this.next = () => {
@@ -978,23 +1192,36 @@ function Book(body, options, files, settings) {
         await doc.close();
     };
 
-    function invertColor(hex) {
-        if (hex.indexOf("#") === 0) {
-            hex = hex.slice(1);
+    function invertColor(hexcolor) {
+        try {
+            // If a leading # is provided, remove it
+            if (hexcolor.slice(0, 1) === "#") {
+                hexcolor = hexcolor.slice(1);
+            }
+
+            // If a three-character hexcode, make six-character
+            if (hexcolor.length === 3) {
+                hexcolor = hexcolor
+                    .split("")
+                    .map(function (hex) {
+                        return hex + hex;
+                    })
+                    .join("");
+            }
+
+            // Convert to RGB value
+            let r = parseInt(hexcolor.substr(0, 2), 16);
+            let g = parseInt(hexcolor.substr(2, 2), 16);
+            let b = parseInt(hexcolor.substr(4, 2), 16);
+
+            // Get YIQ ratio
+            let yiq = (r * 299 + g * 587 + b * 114) / 1000;
+
+            // Check contrast
+            return yiq >= 128 ? "black" : "white";
+        } catch (e) {
+            return "black";
         }
-        // convert 3-digit hex to 6-digits.
-        if (hex.length === 3) {
-            hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-        }
-        if (hex.length !== 6) {
-            throw new Error("Invalid HEX color.");
-        }
-        // invert color components
-        var r = (255 - parseInt(hex.slice(0, 2), 16)).toString(16),
-            g = (255 - parseInt(hex.slice(2, 4), 16)).toString(16),
-            b = (255 - parseInt(hex.slice(4, 6), 16)).toString(16);
-        // pad each with zeros and return
-        return "#" + padZero(r) + padZero(g) + padZero(b);
     }
 
     function padZero(str, len) {
@@ -1034,10 +1261,13 @@ function Book(body, options, files, settings) {
 
     this.getPadding = () => {
         return this.menu.showPlayer || this.settings.selectedChapterIndex === 0
-            ? 0
+            ? 5
             : 200;
     };
 
+    function escapeRegExp(text) {
+        return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+    }
     this.loadChapter = async chapter => {
         try {
             this.loader.show();
@@ -1056,6 +1286,30 @@ function Book(body, options, files, settings) {
                     text[cs.audioProgress].text
                 }</div>`;
             }
+            this.settings.textReplacement.forEach(x => {
+                let txt = escapeRegExp(x.a);
+                let r = new RegExp(txt, "gmi");
+                const span = new Element("span", { innerHTML: x.b });
+                span.css({
+                    backgroundColor: x.color,
+                    color: invertColor(x.color)
+                });
+                if (x.comment && x.comment.length > 0) {
+                    span.add(
+                        new Element("handler", {
+                            innerHTML: "&#9654;"
+                        }).setAttr("onclick", "toggle(this)"),
+                        new Element("folder", {
+                            className: "hidden",
+                            innerHTML: x.comment,
+
+                            backgroundColor: x.color,
+                            color: invertColor(x.color)
+                        })
+                    );
+                }
+                text = text.replace(r, span.el.outerHTML);
+            });
             if (!this.menu) {
                 this.downmenu = new downMenu();
                 this.menu = new topMenu();
@@ -1073,14 +1327,27 @@ function Book(body, options, files, settings) {
                 .parseFromString(text, "text/html")
                 .querySelector("body");
             htmlBody = htmlBody ? htmlBody.innerHTML : text;
+            const script = `
+              function toggle(e){
+              	window.event.preventDefault();
+              	window.event.stopPropagation();
+              	let folder = e.parentNode.querySelector("folder")
+              	if(!folder.classList.contains("hidden"))
+              	   e.innerHTML ="&#9654;";
+              	  else e.innerHTML = "&#9660;"
+              	folder.classList.toggle("hidden")
+              }
+            `;
             const style = `
+            folder{
+            	display:block;
+            	font-size:15px;
+            }
+            .hidden{display:none}
             .center{
-            	display:flex;
-            	height:100%;
+            	display:inline-block;
+            	position:relative;
             	width:100%;
-            	justify-items: center;
-    					justify-content: center;
-    					align-items: center;
             }
       p,*{
       line-height:${this.settings.fontSize * 1.7}px;
@@ -1098,7 +1365,7 @@ function Book(body, options, files, settings) {
       img{max-width:100%;}
       ${this.settings.inlineStyle}
       ${style}
-      </style>` + htmlBody;
+      </style><script>${script}</script>` + htmlBody;
             document.body.style.backgroundColor = this.settings.backgroundColor;
 
             [...document.querySelectorAll(".menuIcon div")].forEach(
@@ -1125,12 +1392,21 @@ function Book(body, options, files, settings) {
                 html.clientHeight,
                 html.scrollHeight,
                 html.offsetHeight,
+                getOffet(body).height,
                 this.container.offset().height
             );
+            height += this.settings.fontSize * 1.7;
             this.iframe.css({
                 height: height + "px",
                 paddingTop: this.getPadding(),
-                paddingBottom: this.menu.showPlayer == false ? 200 : 0
+                paddingBottom:
+                    this.menu.showPlayer == false
+                        ? 200
+                        : this.settings.fontSize * 1.7
+            });
+            this.container.css({
+                top: (this.menu.showPlayer ? 20 : 0) + "px",
+                paddingBottom: this.menu.showPlayer ? 0 : 0
             });
             doc.body.onclick = () => {
                 if (!this.contextMenu || this.contextMenu.menuState == 0) {
@@ -1138,6 +1414,7 @@ function Book(body, options, files, settings) {
                     this.menu.toggle();
                 }
             };
+
             for (let m of [...doc.querySelectorAll("img")]) {
                 let src = m.src.split("/");
                 src = src[src.length - 1].toLowerCase();
@@ -1166,6 +1443,10 @@ function Book(body, options, files, settings) {
                 : chapter.scrollProgress;
             this.setProgress();
             this.contextMenu = new contextMenu(ifrm.contentWindow, this);
+            if (this.menu.showPlayer)
+                new center(doc.body.querySelector(".center"), doc.body)
+                    .focus()
+                    .destroy();
             if (this.menu.player.playing) this.play();
         } catch (e) {
             console.error(e);
@@ -1181,17 +1462,39 @@ function formField(label, options, ...dataList) {
     });
     if (label.length > 1) {
         const lb = new Element("label", {
-            innerHTML: label
+            innerHTML: label + ":"
         }).appendTo(doc);
     } else doc.classList().add("alone");
     if (!options || options.type !== "font") {
         const input = new Element(
-            dataList && dataList.length > 0 ? "select" : "input",
+            dataList && dataList.length > 0
+                ? "select"
+                : options && options.type == "textarea"
+                ? "textarea"
+                : "input",
             {
                 type: "text",
-                ...options
+                ...options,
+                ...(options && options.type == "color"
+                    ? { "data-jscolor": "{}", type: "", onchange: "" }
+                    : {})
             }
         ).appendTo(doc);
+        if (options && options.type === "color") {
+            input.event("input", e => {
+                if (options && options.onchange) {
+                    options.onchange(e);
+                }
+            });
+            input.el.readOnly = true;
+            input.classList().add("jsc");
+            let jsc = {
+                format: options.format || "hexa",
+                paletteSetsAlpha: options.format != "hex",
+                alphaChannel: options.format != "hex"
+            };
+            input.attr("data-jscolor", JSON.stringify(jsc));
+        }
         if (options && options.type === "range") {
             const output =
                 options.handler ||
@@ -1200,15 +1503,22 @@ function formField(label, options, ...dataList) {
                     innerHTML: input.val()
                 }).appendTo(doc);
             doc.setInput = () => {
+                let fixed = v => {
+                    let r = v.toString().split(".");
+                    if (r.length > 1) {
+                        if (parseInt(r[1]) > 0) return v.toFixed(2);
+                    }
+                    return v.toFixed(0);
+                };
                 const range = input.el;
                 const bubble = output.el;
 
                 const min = range.min ? range.min : 0;
                 const max = range.max ? range.max : 100;
-                const val = parseInt((range.value || max).toString());
+                const val = parseFloat((range.value || max).toString());
                 const newVal = (100 * val) / max;
-                if (!options.procent) bubble.innerHTML = val;
-                else bubble.innerHTML = newVal.toFixed(0) + "%";
+                if (!options.procent) bubble.innerHTML = fixed(val);
+                else bubble.innerHTML = fixed(newVal) + "%";
             };
             input.event("input", () => doc.setInput());
         }
@@ -1284,6 +1594,8 @@ function horizentalMenu(onchange) {
         this.resize();
     });
 
+    this.rindex = resizEvents.length - 1;
+
     this.select = index => {
         this.resize();
         if (this.selectedIndex == index) return;
@@ -1298,6 +1610,10 @@ function horizentalMenu(onchange) {
         });
 
         if (onchange) onchange();
+    };
+
+    this.destroy = () => {
+        resizEvents.removeAt(this.rindex);
     };
 }
 
@@ -1374,6 +1690,78 @@ function downMenu() {
         else this.container.hide();
     };
 }
+let etext = undefined;
+function textReplacement(txt) {
+    if (etext !== undefined) {
+        etext.tabMenu.destroy();
+        etext.dialog.destroy();
+    }
+    const tabs = [
+        {
+            text: "TextReplacement",
+            content: new Element("div", { className: "TextReplacement" }).add(
+                new Element("h1", {
+                    innerHTML: "Replace text",
+                    className: "ptitle"
+                }).add(
+                    new Element("span", {
+                        className: "underTitle",
+                        innerHTML: "This operation applies to the entire book"
+                    })
+                ),
+                new formField("Text-A", {
+                    type: "textarea",
+                    rows: 4,
+                    cols: 50,
+                    className: "txt-a",
+                    value: txt
+                }),
+                new formField("Text-B", {
+                    type: "textarea",
+                    rows: 4,
+                    cols: 50,
+                    className: "txt-b",
+                    placeholder:
+                        "leave it empty, if simple to remove the text above"
+                }),
+                new formField("Comment", {
+                    placeholder: "Add comment",
+                    rows: 4,
+                    cols: 50,
+                    type: "textarea",
+                    className: "comment"
+                }),
+                new formField("BackgroundColor", {
+                    type: "color",
+                    value: "#FFFFFF00",
+                    className: "color"
+                }),
+                new Element("button", {
+                    className: "submit",
+                    innerHTML: "Save"
+                }).event("click", () => {
+                    let tab = tabs[0].content;
+                    let a = tab.find(".txt-a");
+                    let b = tab.find(".txt-b");
+                    book.settings.textReplacement.add({
+                        a: a.val(),
+                        b: b.val(),
+                        comment: tab.find(".comment").val(),
+                        color: tab.find(".color").val()
+                    });
+                    book.onUpdateSettings();
+                    this.dialog.close();
+                })
+            )
+        }
+    ];
+    this.tabMenu = new horizentalMenu().addTabs(...tabs);
+    this.dialog = new dialog(book.epubBody)
+        .title("TextReplacement SETTINGS")
+        .data(this.tabMenu.container.el);
+    etext = this;
+    this.dialog.open();
+}
 
 function topMenu() {
     const reg = /(\.)| |\//g;
@@ -1382,6 +1770,14 @@ function topMenu() {
         className: "topMenu hidden"
     }).insertBefore(book.epubBody);
     this.player = new player(this);
+    if (book.options.onBack) {
+        new Element("i", {
+            className: "menuIcon toback",
+            innerHTML: `<span class="material-symbols-outlined">arrow_back</span>`
+        })
+            .appendTo(this.container)
+            .event("click", () => book.options.onBack());
+    }
     this.btnPlayer = new Element("i", {
         className: "menuIcon",
         innerHTML: `<span class="material-symbols-outlined">smart_display</span>`
@@ -1436,7 +1832,7 @@ function topMenu() {
                             book.settings.fontSize = parseInt(
                                 tabs[0].content.find("input").val()
                             );
-                            book.loadChapter();
+                            book.onUpdateSettings();
                         }
                     })
                 )
@@ -1448,7 +1844,7 @@ function topMenu() {
                             value: book.settings.font,
                             onchange: e => {
                                 book.settings.font = e.target.value;
-                                book.loadChapter();
+                                book.onUpdateSettings();
                             }
                         },
                         ...fonts
@@ -1466,17 +1862,18 @@ function topMenu() {
                         onclick: (e, lbl) => {
                             let s = lbl.split("_");
                             book.settings.textAlign = s[s.length - 1];
-                            book.loadChapter();
+                            book.onUpdateSettings();
                         }
                     })
                 )
                 .add(
                     new formField("Color", {
                         type: "color",
+                        format: "hex",
                         value: book.settings.backgroundColor,
                         onchange: e => {
                             book.settings.backgroundColor = e.target.value;
-                            book.loadChapter();
+                            book.onUpdateSettings();
                         }
                     })
                 )
@@ -1486,7 +1883,7 @@ function topMenu() {
                         {
                             onclick: e => {
                                 book.settings.isBold = !book.settings.isBold;
-                                book.loadChapter();
+                                book.onUpdateSettings();
                             },
                             className: "link"
                         },
@@ -1517,14 +1914,52 @@ function topMenu() {
             })
         },
         {
+            text: "VOICE SETTINGS",
+            content: new Element("div").add(
+                new formField(
+                    "Voice",
+                    {
+                        type: "select",
+                        onchange: e => {
+                            book.voiceSettings.voice = e.target.value;
+                            book.onUpdateSettings();
+                        }
+                    },
+                    book.voiceSettings.voices
+                ),
+                new formField("Rate", {
+                    type: "range",
+                    max: 3,
+                    min: 0.7,
+                    step: 0.1,
+                    value: book.voiceSettings.rate,
+                    onchange: e => {
+                        book.voiceSettings.rate = parseFloat(e.target.value);
+                        book.onUpdateSettings();
+                    }
+                }),
+                new formField("Pitch", {
+                    type: "range",
+                    max: 3,
+                    min: 0.7,
+                    step: 0.1,
+                    value: book.voiceSettings.rate,
+                    onchange: e => {
+                        book.voiceSettings.pitch = parseFloat(e.target.value);
+                        book.onUpdateSettings();
+                    }
+                })
+            )
+        },
+        {
             text: "INLINE STYLE",
             content: new Element("textarea", {
                 rows: 20,
                 cols: 33,
                 onchange: () => {
                     if (book) {
-                        book.settings.inlineStyle = tabs[2].content.val();
-                        book.loadChapter();
+                        book.settings.inlineStyle = tabs[3].content.val();
+                        book.onUpdateSettings();
                     }
                 }
             })
@@ -1544,12 +1979,12 @@ function topMenu() {
     this.loadChapters = ch => {
         if (book) {
             if (this.firstLoad) {
-                tabs[2].content.val(book.settings.inlineStyle);
+                tabs[3].content.val(book.settings.inlineStyle);
                 this.firstLoad = false;
             }
             const ctab = tabs[1].content;
             ctab.val("");
-            book.settings.chapterSettings.forEach(x => {
+            book.settings.chapterSettings.forEach((x, i) => {
                 let chapter = x;
                 if (book.isValid(x))
                     ctab.add(
@@ -1559,7 +1994,7 @@ function topMenu() {
                                 (ch.name === x.name ? " selected " : "") +
                                 x.name.replace(reg, ""),
                             onclick: () => {
-                                book.loadChapter(chapter);
+                                book.jumpTo(i);
                             }
                         }).el
                     );
@@ -1631,13 +2066,12 @@ function player(menu) {
         innerHTML: `<span class="material-symbols-outlined">play_circle</span>`
     }).appendTo(this.container);
     this.play.event("click", () => {
-        if (this.playing) book.stop();
-        else book.play();
+        if (this.playing) {
+            book.stop();
+        } else {
+            book.play();
+        }
     });
-    this.stop = new Element("i", {
-        className: "menuIcon",
-        innerHTML: `<span class="material-symbols-outlined">stop_circle</span>`
-    }).appendTo(this.container);
 
     this.next = new Element("i", {
         className: "menuIcon",
@@ -1660,6 +2094,11 @@ player.prototype = {
     set playing(v) {
         this.pl = v;
         if (v) book.menu.showPlayer = true;
+        if (!v) {
+            this.play.find("span").val("play_circle");
+        } else {
+            this.play.find("span").val("pause_circle");
+        }
         return this.pl;
     }
 };
@@ -1681,6 +2120,7 @@ async function fetch_file(url, options) {
         throw e;
     }
 }
+
 async function downloadFile(file, options) {
     try {
         const data = await JSZip.loadAsync(file);
